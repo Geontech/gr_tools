@@ -1,6 +1,14 @@
 gr_tools Package
 ================
 
+:mod:`install_grc` Module
+-------------------------
+
+.. automodule:: gr_tools.install_grc
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`run_sim` Module
 ---------------------
 
