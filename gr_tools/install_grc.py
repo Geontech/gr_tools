@@ -113,7 +113,7 @@ def install_grc_files(files_list, target):
             break
 
     # return the list of file passing
-    return files_list[file_passed], files_list[not file_passed]
+    return files_list[file_passed], files_list[np.invert(file_passed)]
 
 if __name__ == "__main__":
     # ------------------------  prepare parser  -----------------------------
