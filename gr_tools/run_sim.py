@@ -26,9 +26,8 @@ Examples
 import os
 import sys
 import numpy as np
-import time
 from gnuradio import gr, blocks
-
+from gr_tools.parameter_space import get_param_space
 DTYPE = {
     "BYTE": gr.sizeof_char * 1,
     "FLOAT": gr.sizeof_float,
@@ -38,7 +37,7 @@ DTYPE = {
 }
 DEFAULT_FILE_SPEC = {
     "path":"",
-    "type":gr.sizeof_char * 1,
+    "type":"BYTE",
     "repeat":True,
 }
 DEFAULT_MESSAGE_SPEC = {
@@ -47,7 +46,7 @@ DEFAULT_MESSAGE_SPEC = {
 }
 DEFAULT_OUT_SPEC = {
     "path":"",
-    "type": DTYPE["BYTE"],
+    "type": "BYTE",
     "n_items":10000,
 }
 FILE_EXT = {
@@ -57,6 +56,108 @@ FILE_EXT = {
     "INT":".32i",       # 32 bit integer
     "SHORT":".16i"      # 16 bit ints/shorts
 }
+
+def batch_run_file_source(comp_func, param_dict, base_name,
+        in_spec=DEFAULT_FILE_SPEC, out_spec=DEFAULT_OUT_SPEC,
+        connections=None):
+    """
+    Run through the list of parameters.
+
+    Parameters
+    ----------
+    comp_func : function
+        The constructor for the GNU Radio component
+
+    param_dict : dict
+        Each key is a keyword of the constructor.
+        Each value is a list of acceptable parameter.
+
+    base_name : str
+        Base name for output signal
+
+    in_spec : dict
+        The input spec for the file
+
+    out_spec : dict
+        The output spec with data type and number output
+        bytes.  The path for the output file is updated
+        with the base_name
+
+    connections : None or (tuple)
+        If None, just try to connect.
+        If provided, enforce connect to the right port
+        First element of tuple defines the port on input
+        Second element of tuple defines the port on output
+    """
+    # get the list of parameters
+    param_list = get_param_space(param_dict)
+    out_ext = FILE_EXT[out_spec["type"]]
+
+    for p_ind, param in enumerate(param_list):
+        # ---------------------  update the output spec  --------------------
+        o_spec = {}
+        o_spec.update(out_spec)
+
+        # update output file name based on parameter
+        o_spec["path"] = base_name + "_param_%06d%s"%(p_ind, out_ext)
+
+        # -----------  generate component with the new parameters  ----------
+        component = comp_func(**param)
+
+        # ------------------------  run simulation  -------------------------
+        run_file_source(component, in_spec, o_spec, connections)
+
+def batch_run_msg_source(comp_func, param_dict, base_name,
+        in_spec=DEFAULT_FILE_SPEC, out_spec=DEFAULT_OUT_SPEC,
+        connections=None):
+    """
+    Run through the list of parameters.
+
+    Parameters
+    ----------
+    comp_func : function
+        The constructor for the GNU Radio component
+
+    param_dict : dict
+        Each key is a keyword of the constructor.
+        Each value is a list of acceptable parameter.
+
+    base_name : str
+        Base name for output signal
+
+    in_spec : dict
+        The input spec for the message source
+
+    out_spec : dict
+        The output spec with data type and number output
+        bytes.  The path for the output file is updated
+        with the base_name
+
+    connections : None or (tuple)
+        If None, just try to connect.
+        If provided, enforce connect to the right port
+        First element of tuple defines the port on input
+        Second element of tuple defines the port on output
+    """
+    # get the list of parameters
+    param_list = get_param_space(param_dict)
+    out_ext = FILE_EXT[out_spec["type"]]
+
+    for p_ind, param in enumerate(param_list):
+        # ---------------------  update the output spec  --------------------
+        o_spec = {}
+        o_spec.update(out_spec)
+
+        # update output file name based on parameter
+        o_spec["path"] = base_name + "_param_%06d%s"%(p_ind, out_ext)
+
+        # -----------  generate component with the new parameters  ----------
+        component = comp_func(**param)
+
+        # ------------------------  run simulation  -------------------------
+        run_msg_source(component, in_spec, o_spec, connections)
+
+
 def run_file_source(component,
         file_spec=DEFAULT_FILE_SPEC, out_spec=DEFAULT_OUT_SPEC,
         connections=None):
@@ -86,12 +187,12 @@ def run_file_source(component,
 
     # ------------------------  setup scenario  -----------------------------
     file_src = blocks.file_source(
-        file_spec["type"], file_spec["path"], file_spec["repeat"])
+        DTYPE[file_spec["type"]], file_spec["path"], file_spec["repeat"])
 
     # use the head block to limit output
-    head = blocks.head(out_spec["type"], out_spec["n_items"])
+    head = blocks.head(DTYPE[out_spec["type"]], out_spec["n_items"])
     file_sink = blocks.file_sink(
-        out_spec["type"], out_spec["path"]
+        DTYPE[out_spec["type"]], out_spec["path"]
     )
 
     # add connections
@@ -138,9 +239,9 @@ def run_msg_source(component,
         msg_spec["period(ms)"])
 
     # use the head block to limit output
-    head = blocks.head(out_spec["type"], out_spec["n_items"])
+    head = blocks.head(DTYPE[out_spec["type"]], out_spec["n_items"])
     file_sink = blocks.file_sink(
-        out_spec["type"], out_spec["path"]
+        DTYPE[out_spec["type"]], out_spec["path"]
     )
 
 
@@ -151,10 +252,11 @@ def run_msg_source(component,
     # -----------------------  run simulation  ------------------------------
     # NOTE: top.run() does not seem to check head
     #       when tested on msg_source -> wifi -> file_sink
+    import time
     top.start(max_noutput_items=out_spec["n_items"])
     while head.nitems_written(0) < out_spec["n_items"]:
         time.sleep(1e-3)
 
     print("Completed simulation")
-    #top.stop() # FIXME: get "boost::thread_interrupted"
 
+    del(top)

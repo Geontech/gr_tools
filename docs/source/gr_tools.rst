@@ -9,6 +9,14 @@ gr_tools Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`parameter_space` Module
+-----------------------------
+
+.. automodule:: gr_tools.parameter_space
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`run_sim` Module
 ---------------------
 

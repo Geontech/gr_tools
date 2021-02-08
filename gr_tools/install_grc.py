@@ -69,6 +69,15 @@ def install_grc_files(files_list, target):
     files_fail : list
         List of files that failed to compile.
     """
+    # if tilda, point to the current $HOME environment variable
+    if target[0] == "~":
+        home_dir = os.environ.get("HOME")
+        target = target.replace("~", home_dir)
+
+    # if target directory does not exist, make it now.
+    if not os.path.isdir(target):
+        os.makedirs(target)
+
     # -----------------------  initialize output  ---------------------------
     files_list = np.array(files_list)
     file_passed = np.array([False] * len(files_list))
