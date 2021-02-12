@@ -88,10 +88,18 @@ def batch_run_file_source(comp_func, param_dict, base_name,
         If provided, enforce connect to the right port
         First element of tuple defines the port on input
         Second element of tuple defines the port on output
+
+    Returns
+    -------
+    out_dict : dict
+        Each key is the output file generated.
+        Each value is the param settings.
     """
     # get the list of parameters
     param_list = get_param_space(param_dict)
     out_ext = FILE_EXT[out_spec["type"]]
+
+    out_dict = {}
 
     for p_ind, param in enumerate(param_list):
         # ---------------------  update the output spec  --------------------
@@ -106,6 +114,11 @@ def batch_run_file_source(comp_func, param_dict, base_name,
 
         # ------------------------  run simulation  -------------------------
         run_file_source(component, in_spec, o_spec, connections)
+
+        # track the params associated with each file
+        out_dict[o_spec["path"]] = param
+
+    return out_dict
 
 def batch_run_msg_source(comp_func, param_dict, base_name,
         in_spec=DEFAULT_FILE_SPEC, out_spec=DEFAULT_OUT_SPEC,
@@ -138,10 +151,17 @@ def batch_run_msg_source(comp_func, param_dict, base_name,
         If provided, enforce connect to the right port
         First element of tuple defines the port on input
         Second element of tuple defines the port on output
+
+    Returns
+    -------
+    out_dict : dict
+        Each key is the output file generated.
+        Each value is the param settings.
     """
     # get the list of parameters
     param_list = get_param_space(param_dict)
     out_ext = FILE_EXT[out_spec["type"]]
+    out_dict = {}
 
     for p_ind, param in enumerate(param_list):
         # ---------------------  update the output spec  --------------------
@@ -157,6 +177,10 @@ def batch_run_msg_source(comp_func, param_dict, base_name,
         # ------------------------  run simulation  -------------------------
         run_msg_source(component, in_spec, o_spec, connections)
 
+        # track the params associated with each file
+        out_dict[o_spec["path"]] = param
+
+    return out_dict
 
 def run_file_source(component,
         file_spec=DEFAULT_FILE_SPEC, out_spec=DEFAULT_OUT_SPEC,
