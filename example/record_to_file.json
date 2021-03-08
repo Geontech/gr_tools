@@ -1,0 +1,26 @@
+{
+    "components":{
+        "Source":{
+            "key":"uhd_source",
+            "val":{
+                "device":"b200",
+                "sample_rate":2e6,
+                "radio_freq": 900e6,
+                "gain":0
+            }
+        },
+        "Sink":{
+            "key":"udp_sink",
+            "val":{
+                "itemsize":8,
+                "host":"localhost",
+                "port":0,
+                "payload_size":1472,
+                "eof":true
+            }
+        }
+    },
+    "connections":[
+        ["Source", 0, "Sink", 0]
+    ]
+}

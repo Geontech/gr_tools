@@ -1,0 +1,30 @@
+{
+    "components":{
+        "Source":{
+            "key":"file_source",
+            "val":{
+                "itemsize":8,
+                "filename":"/tmp/filename.32cf",
+                "repeat":true
+            }
+        },
+        "Sink":{
+            "key":"udp_sink",
+            "val":{
+                "itemsize":8,
+                "host":"localhost",
+                "port":3122,
+                "payload_size":1472,
+                "eof":true
+            }
+        }
+    },
+    "connections":[
+        ["Source", 0, "Sink", 0]
+    ],
+    "simulation":{
+        "type":"User",
+        "value":{}
+    }
+
+}

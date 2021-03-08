@@ -1,0 +1,38 @@
+{
+    "components":{
+        "Source":{
+            "key":"file_source",
+            "val":{
+                "itemsize":8,
+                "filename":"/tmp/filename.32cf",
+                "repeat":true
+            }
+        },
+        "Head":{
+            "key":"head",
+            "val":{
+                "sizeof_stream_item":8,
+                "nitems":10000
+            }
+        },
+        "Sink":{
+            "key":"file_sink",
+            "val":{
+                "itemsize":8,
+                "filename":"/tmp/out.32cf",
+                "append":false
+            }
+        }
+    },
+    "connections":[
+        ["Source", 0, "Head", 0],
+        ["Head", 0, "Sink", 0]
+    ],
+    "simulation":{
+        "type":"Data",
+        "value":{
+            "max_noutput_items":100000
+        }
+    }
+
+}
