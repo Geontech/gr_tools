@@ -1,0 +1,37 @@
+{
+    "components":{
+        "Source":{
+            "key":"usrp_source",
+            "val":{
+            	"device":"b200",
+            	"sample_rate":2e6,
+            	"radio_freq":850e6,
+            	"gain":40
+            }
+        },
+        "Head":{
+            "key":"head",
+            "val":{
+                "sizeof_stream_item":8,
+                "nitems":1000000
+            }
+        },
+        "Sink":{
+            "key":"file_sink",
+            "val":{
+                "itemsize":8,
+                "filename":"/tmp/out.32cf",
+                "append":false
+            }
+        }
+    },
+    "connections":[
+        ["Source", 0, "Head", 0],
+        ["Head", 0, "Sink", 0]
+    ],
+    "simulation":{
+        "type":"Data",
+        "value":{}
+    }
+
+}

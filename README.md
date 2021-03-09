@@ -1,6 +1,12 @@
 # gr_tools
 Python library to aid in running and debugging GNU Radio processes
 
+| Module | Description |
+| --- | --- |
+| install_grc | Install a folder of GRC files |
+| run_sim | Run simulation with multiple combinations of parameters |
+| run_simulator_custom | Load a scenario from a json file |
+
 ## Usage
 
 ### Installing GRC
@@ -40,4 +46,27 @@ out_spec = {"path":"/tmp/out.32cf", "type":"COMPLEX", "n_items":1000000}
 batch_run_file_source(
     atsc_8vsb_transmit, param_dict, "/tmp/base_name",
     in_spec, out_spec)
+~~~
+
+### Run Simulator Custom
+[run_simulator_custom](gr_tools/run_simulator_custom.py) supports running a scenario described in a json file.  Example json files available in the example folder.
+
+'components' is specified as a dict with "unique id" per component.
+Each component is a dictionary with 'key' specifying the component type and 'val', specifying the parameters of the component.
+
+'connections' is a list of connections.  A connection is a list of 4 elements.
+* Unique Id of the first component
+* Port of the first component
+* unique Id of the second component
+* port of the second component
+
+'simulation' specifies how to run the scene.
+* Data
+  * This requires a 'head' component to specify the number of samples to limit the simulation.
+* Time
+  * value should have 'duration', to specify time in seconds to run simulation
+* User
+  * User is prompted to hit enter to stop the simulation
+~~~bash
+$ python -m gr_tools.run_simulator_custom example/usrp_to_file.json
 ~~~

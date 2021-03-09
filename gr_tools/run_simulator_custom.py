@@ -61,9 +61,9 @@ def load_and_run_scenario(json_file):
         c_comp_type = c_comp_spec["key"]
         c_comp_value = c_comp_spec["val"]
 
-        if c_comp_type == "uhd_source":
+        if c_comp_type == "usrp_source":
             c_comp = config_uhd_source(**c_comp_value)
-        elif c_comp_type == "uhd_sink":
+        elif c_comp_type == "usrp_sink":
             c_comp = config_uhd_sink(**c_comp_value)
         else:
             # construct object with parameters
@@ -90,8 +90,9 @@ def load_and_run_scenario(json_file):
         resp = user_prompt("Hit enter to exit")
         top.stop()
     elif simm["type"].lower() in ["data"]:
+    	# NOTE: the number of samples is specified in the "head" component
         # TODO: assert that a head component is in components
-        top.run(max_noutput_items=simm["value"]["max_noutput_items"])
+        top.run()
     else:
         raise RuntimeError("Unexpected type of simulation")
 

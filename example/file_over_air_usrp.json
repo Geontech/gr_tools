@@ -1,0 +1,48 @@
+{
+    "components":{
+    	"FileSource":{
+            "key":"file_source",
+            "val":{
+                "itemsize":8,
+                "filename":"/tmp/filename.32cf",
+                "repeat":true
+            }
+    	},
+    	"TXSink":{
+            "key":"usrp_sink",
+            "val":{
+            	"device":"b200",
+            	"sample_rate":2e6,
+            	"radio_freq":905e6,
+            	"gain":0
+            }
+
+    	},
+        "RXSource":{
+            "key":"usrp_source",
+            "val":{
+            	"device":"b200",
+            	"sample_rate":2e6,
+            	"radio_freq":905e6,
+            	"gain":0
+            }
+        },
+        "FileSink":{
+            "key":"file_sink",
+            "val":{
+                "itemsize":8,
+                "filename":"/tmp/out.32cf",
+                "append":false
+            }
+        }
+    },
+    "connections":[
+        ["FileSource", 0, "TXSink", 0],
+        ["RXSource", 0, "FileSink", 0]
+    ],
+    "simulation":{
+        "type":"User",
+        "value":{}
+    }
+
+}
