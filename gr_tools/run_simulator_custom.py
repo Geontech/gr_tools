@@ -1,29 +1,19 @@
-#!/usr/bin/env python
-"""Module to control USRP
-
-Use Cases
----------
-Receive Only
-- Record to File (USRP RX -> FileSink)
-- Receive Stream (USRP RX -> TCP/UDP)
-
-Broadcast Only
-- Playback/broadcast file (FileSource -> USRP TX)
-- Broadcast stream (TCP/UDP -> USRP TX)
-
-Hybrid
-- Forward (RX -> TX), potentially same frequency
-- Playback + Record (Add over the air effects to simulated signals)
+#!/usr/bin/env python3
+"""Module to load and rum scenario
 """
 import json
+import os
 import sys
 import time
+import importlib.util as iutil
 from gnuradio import gr, blocks, uhd
 
 # get appropriate user prompt based on Python
 if sys.version_info.major == "2":
+    # Python2 user prompt
     user_prompt = raw_input
 else:
+    # Python3 user prompt
     user_prompt = input
 
 COMP_CONSTRUCTORS = {
@@ -31,22 +21,69 @@ COMP_CONSTRUCTORS = {
     "usrp_sink": uhd.usrp_sink
 }
 
-def load_blocks():
+def load_blocks(custom_dir):
     """Load blocks available through gnuradio
+
+    Parameters
+    ----------
+    custom_dir : str
+        The path to the directory of Python modules for custom
+        GNU Radio components
 
     Returns
     -------
     out : dict
         The dictionary of blocks available in
     """
-    from inspect import getmembers, isfunction
+    from inspect import getmembers, isfunction, isclass
     tmp = getmembers(blocks, isfunction)
-    return dict(tmp)
+    out_dict = dict(tmp)
 
-# update with gnuradio.blocks
-COMP_CONSTRUCTORS.update(load_blocks())
+    if not custom_dir:
+        # no custom dir, return
+        return out_dict
+
+    # ---------------  load modules from custom directory  ------------------
+    # store current dir and change to the custome directory
+    c_dir = os.path.abspath(".")
+    os.chdir(custom_dir)
+
+    # go through list of files
+    files = os.listdir(".")
+    for c_file in files:
+        if c_file[-3:] == ".py":
+            mod_name = c_file[:-3]
+            mod_spec = iutil.spec_from_file_location(mod_name,
+                c_file)
+
+            c_module = iutil.module_from_spec(mod_spec)
+            c_module.__loader__.exec_module(c_module)
+
+            try:
+                # update out_dict with custom modules
+                t_list = getmembers(c_module, isclass)
+                t_dict = dict(t_list)
+                out_dict[mod_name] = t_dict[mod_name]
+            except Exception as e:
+                print("Exception caught " + e)
+                continue
+
+    # return to original directory
+    os.chdir(c_dir)
+
+    return out_dict
 
 def load_and_run_scenario(json_file):
+    """Load scenario from json file
+
+    The json file is expected to have a dictionary with
+    fields "components", "connections", and "simulation"
+
+    Parameters
+    ----------
+    json_file : str
+        The path to the Json.
+    """
     settings = json.load(open(json_file))
     comps = settings["components"]
     conns = settings["connections"]
@@ -97,7 +134,28 @@ def load_and_run_scenario(json_file):
         raise RuntimeError("Unexpected type of simulation")
 
 def config_uhd_source(device, sample_rate, radio_freq, gain):
-    """
+    """Configure UHD Source
+
+    Configure UHD source
+
+    Parameters
+    ----------
+    device : str
+        An example is "b200".
+
+    sample_rate : float
+        The sampling rate of the USRP
+
+    radio_freq : float
+        The tuning frequency of the radio in Hertz
+
+    gain : float
+        The gain in decibels.
+
+    Returns
+    -------
+    usrp_src : uhd.usrp_source
+        The USRP source
     """
     assert radio_freq > 0, "Receive tune frequency should be > 0"
     assert sample_rate > 0, "Receive sample rate should be > 0"
@@ -119,6 +177,29 @@ def config_uhd_source(device, sample_rate, radio_freq, gain):
     return uhd_rx
 
 def config_uhd_sink(device, sample_rate, radio_freq, gain):
+    """Configure UHD Sink
+
+    Configure UHD sink
+
+    Parameters
+    ----------
+    device : str
+        An example is "b200".
+
+    sample_rate : float
+        The sampling rate of the USRP
+
+    radio_freq : float
+        The tuning frequency of the radio in Hertz
+
+    gain : float
+        The gain in decibels.
+
+    Returns
+    -------
+    usrp_snk : uhd.usrp_sink
+        The USRP sink
+    """
     assert radio_freq > 0, "Transmit tune frequency should be > 0"
     assert sample_rate > 0, "Transmit sample rate should be > 0"
 
@@ -139,7 +220,13 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.add_argument("json", help="Scene config stored in json")
+    parser.add_argument("--custom", default="",
+        help="Custom folder of GNU radio components")
     args = parser.parse_args()
 
     # ---------------------------------  process  ---------------------------
+    # update list of components
+    COMP_CONSTRUCTORS.update( load_blocks(args.custom) )
+
+    # run the simulation
     load_and_run_scenario(args.json)

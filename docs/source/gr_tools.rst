@@ -1,6 +1,14 @@
 gr_tools Package
 ================
 
+:mod:`gr_tools` Package
+-----------------------
+
+.. automodule:: gr_tools.__init__
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`install_grc` Module
 -------------------------
 
@@ -21,6 +29,14 @@ gr_tools Package
 ---------------------
 
 .. automodule:: gr_tools.run_sim
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`run_simulator_custom` Module
+----------------------------------
+
+.. automodule:: gr_tools.run_simulator_custom
     :members:
     :undoc-members:
     :show-inheritance:

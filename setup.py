@@ -1,8 +1,8 @@
  #!/usr/bin/env python
 from setuptools import setup, find_packages
 name = "GNU Radio Tools"
-version = "0.0"
-release = "0.0"
+version = "0.1"
+release = "0.1"
 author = "Keith Chow"
 
 setup(
