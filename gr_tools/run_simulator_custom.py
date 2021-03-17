@@ -81,13 +81,31 @@ def load_and_run_scenario(json_file):
 
     Parameters
     ----------
-    json_file : str
-        The path to the Json.
+    json_file : str or dict
+        If str, the path to the Json (storing a dict)
+        If dict, use dictionary as settings with fields:
+        ('components', 'connections', 'simulation')
+
+    Raises
+    ------
+    IOError
+        Json file does not exist
+
+    KeyError
+        Settings do not have one of the expected fields
     """
-    settings = json.load(open(json_file))
+    if isinstance(json_file, str):
+        settings = json.load(open(json_file))
+    elif isinstance(json_file, dict):
+        settings = json_file
+    else:
+        raise ValueError("Expecting a string json filepath or dict")
+
+    # extract from dictionary (verify keys exist)
     comps = settings["components"]
     conns = settings["connections"]
     simm = settings["simulation"]
+
     # ----------------------  initialize objects  ---------------------------
     top = gr.top_block()
     comp_obj = {}
