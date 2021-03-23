@@ -6,6 +6,7 @@ import os
 import sys
 import time
 import importlib.util as iutil
+from inspect import getmembers, isfunction, isclass
 from gnuradio import gr, blocks, uhd
 
 # get appropriate user prompt based on Python
@@ -21,23 +22,34 @@ COMP_CONSTRUCTORS = {
     "usrp_sink": uhd.usrp_sink
 }
 
-def load_blocks(custom_dir):
+def load_blocks(modules=[blocks], custom_dir=None):
     """Load blocks available through gnuradio
 
     Parameters
     ----------
-    custom_dir : str
+    modules : list
+        List of modules to draw GNU Radio constrcutors from.
+        By default this is [gnuradio.blocks]
+
+    custom_dir : str or list
         The path to the directory of Python modules for custom
-        GNU Radio components
+        GNU Radio components.
+        A common directory would be $HOME/.grc_gnuradio where components
+        are typically installed.
 
     Returns
     -------
     out : dict
         The dictionary of blocks available in
     """
-    from inspect import getmembers, isfunction, isclass
-    tmp = getmembers(blocks, isfunction)
-    out_dict = dict(tmp)
+    out_dict = {}
+    for mod in modules:
+        # get GNU Radio components from this module
+        tmp = getmembers(mod, isfunction)
+        tmp_dict = dict(tmp)
+
+        # update out dict
+        out_dict.update(tmp_dict)
 
     if not custom_dir:
         # no custom dir, return
@@ -46,34 +58,38 @@ def load_blocks(custom_dir):
     # ---------------  load modules from custom directory  ------------------
     # store current dir and change to the custome directory
     c_dir = os.path.abspath(".")
-    os.chdir(custom_dir)
+    if isinstance(custom_dir, str):
+        custom_dir = [custom_dir]
 
-    # go through list of files
-    files = os.listdir(".")
-    for c_file in files:
-        if c_file[-3:] == ".py":
-            mod_name = c_file[:-3]
-            mod_spec = iutil.spec_from_file_location(mod_name,
-                c_file)
+    for curr_dir in custom_dir:
+        os.chdir(curr_dir)
 
-            c_module = iutil.module_from_spec(mod_spec)
-            c_module.__loader__.exec_module(c_module)
+        # go through list of files
+        files = os.listdir(".")
+        for c_file in files:
+            if c_file[-3:] == ".py":
+                mod_name = c_file[:-3]
+                mod_spec = iutil.spec_from_file_location(mod_name,
+                    c_file)
 
-            try:
-                # update out_dict with custom modules
-                t_list = getmembers(c_module, isclass)
-                t_dict = dict(t_list)
-                out_dict[mod_name] = t_dict[mod_name]
-            except Exception as e:
-                print("Exception caught " + e)
-                continue
+                c_module = iutil.module_from_spec(mod_spec)
+                c_module.__loader__.exec_module(c_module)
+
+                try:
+                    # update out_dict with custom modules
+                    t_list = getmembers(c_module, isclass)
+                    t_dict = dict(t_list)
+                    out_dict[mod_name] = t_dict[mod_name]
+                except Exception as e:
+                    print("Exception caught " + e)
+                    continue
 
     # return to original directory
     os.chdir(c_dir)
 
     return out_dict
 
-def load_and_run_scenario(json_file):
+def load_and_run_scenario(json_file, comp_dict=COMP_CONSTRUCTORS):
     """Load scenario from json file
 
     The json file is expected to have a dictionary with
@@ -122,7 +138,7 @@ def load_and_run_scenario(json_file):
             c_comp = config_uhd_sink(**c_comp_value)
         else:
             # construct object with parameters
-            c_comp = COMP_CONSTRUCTORS[c_comp_type](**c_comp_value)
+            c_comp = comp_dict[c_comp_type](**c_comp_value)
         comp_obj[key] = c_comp
 
     # ------------------------  setup connections  --------------------------
@@ -131,7 +147,12 @@ def load_and_run_scenario(json_file):
         c_src_port = conn[1]
         c_tgt = comp_obj[conn[2]]
         c_tgt_port = conn[3]
-        top.connect((c_src, c_src_port), (c_tgt, c_tgt_port))
+        if isinstance(c_src_port, int) and isinstance(c_tgt_port, int):
+            # assume data port if int
+            top.connect((c_src, c_src_port), (c_tgt, c_tgt_port))
+        else:
+            # assume message port in str
+            top.msg_connect((c_src, c_src_port), (c_tgt, c_tgt_port))
 
     # --------------------------  run scenario  -----------------------------
     if simm["type"].lower() in ["time"]:
@@ -150,6 +171,11 @@ def load_and_run_scenario(json_file):
         top.run()
     else:
         raise RuntimeError("Unexpected type of simulation")
+
+    # ---------------------------  cleanup  ---------------------------------
+    for obj in comp_obj:
+        del(obj)
+    del(top)
 
 def config_uhd_source(device, sample_rate, radio_freq, gain):
     """Configure UHD Source
@@ -244,7 +270,7 @@ if __name__ == "__main__":
 
     # ---------------------------------  process  ---------------------------
     # update list of components
-    COMP_CONSTRUCTORS.update( load_blocks(args.custom) )
+    COMP_CONSTRUCTORS.update(load_blocks(custom_dir=[args.custom]))
 
     # run the simulation
     load_and_run_scenario(args.json)
